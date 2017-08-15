@@ -25,6 +25,9 @@ class TNTSearchService
     /** @var TNTSearch $tntsearch */
     private $tntsearch;
 
+    /** @var TNTSearchSyncService $tntsearchSync */
+    private $tntsearchSync;
+
     /** @var Query $query */
     private $query;
 
@@ -52,138 +55,28 @@ class TNTSearchService
     /**
      * Constructor
      *
-     * @param Config       $config
-     * @param \Bolt\Config $boltConfig
-     * @param TNTSearch    $tntsearch,
-     * @param Logger       $logger
+     * @param Config               $config
+     * @param \Bolt\Config         $boltConfig
+     * @param TNTSearch            $tntsearch
+     * @param TNTSearchSyncService $tntsearchSync
+     * @param Query                $query
+     * @param Logger               $logger
      */
     public function __construct(
-        Config       $config,
-        \Bolt\Config $boltConfig,
-        TNTSearch    $tntsearch,
-        Query        $query,
-        Logger       $logger
+        Config               $config,
+        \Bolt\Config         $boltConfig,
+        TNTSearch            $tntsearch,
+        TNTSearchSyncService $tntsearchSync,
+        Query                $query,
+        Logger               $logger
     )
     {
-        $this->config     = $config;
-        $this->boltConfig = $boltConfig;
-        $this->tntsearch  = $tntsearch;
-        $this->query      = $query;
-        $this->logger     = $logger;
-    }
-
-    /**
-     *
-     */
-    public function index($contenttype = null)
-    {
-        if (empty($contenttype)) {
-            $contenttypes = $this->boltConfig->get('contenttypes');
-            foreach ($contenttypes as $contenttype => $v) {
-                $this->indexContenttype($contenttype);
-            }
-        }
-
-        $this->indexContenttype($contenttype);
-    }
-
-    /**
-     *
-     */
-    private function indexContenttype($contenttype)
-    {
-        // Define rules whether to index or not.
-        // -- check status = 'published'
-        // -- check viewless = true
-        // -- check searchable = true
-        // -- check taxonomy
-        // -- check relations
-        // -- check fields
-        //    -- check text-ish fields
-        //    -- check repeaters
-        //    -- check custom fields
-        //dump($this->boltConfig->get('contenttypes')); exit;
-
-        $config    = $this->boltConfig->get('contenttypes/' . $contenttype);
-        $taxonomy  = isset($config['taxonomy']) ? $config['taxonomy'] : [];
-        $relations = isset($config['relations']) ? $config['relations'] : [];
-        $fields    = isset($config['fields']) ? $config['fields'] : [];
-
-        // By default: viewless = false
-        if (isset($config['viewless']) && $config['viewless']) {
-            return;
-        }
-        // Be default: searchable = true
-        if (isset($config['searchable']) && !$config['searchable']) {
-            return;
-        }
-
-        $fieldNames = [];
-        foreach ($fields as $key => $field) {
-            // Simple fields are ready to go
-            if (in_array($field['type'], $this->simpleFields)) {
-                $fieldNames[] = $key;
-            }
-            elseif ($field['type'] == 'somethingelse') {
-                // do something else
-            }
-        }
-
-        if (empty($fieldNames)) {
-            return;
-        }
-        // 'checkbox'
-        // 'date'
-        // 'datetime'
-        // 'file'
-        // 'filelist'
-        // 'float'
-        // 'geolocation'
-        // 'image'
-        // 'imagelist'
-        // 'integer'
-        // 'repeater'
-        // 'seo'
-        // 'templateselect'
-        // 'video'
-
-        $indexer = $this->tntsearch->createIndex($contenttype . '.index');
-        $sql = sprintf(
-            "SELECT `id`, `%s` FROM `%s` WHERE `status` = 'published'",
-            implode('`, `', $fieldNames),
-            $this->boltConfig->get('general/database/prefix', 'bolt_') . $config['tablename'],
-            'published'
-        );
-        $indexer->query($sql);
-
-        // todo: bolt-translate integration ???
-        // $indexer->setLanguage('german');
-
-        $indexer->run();
-    }
-
-    public function insert($contenttype, $id, $data)
-    {
-        //
-    }
-
-    /**
-     *
-     */
-    public function update($contenttype, $id)
-    {
-        // Check if the index exists:
-            // Attempt to index the contenttype
-            // $this->index($contenttype);
-        // $this->tntsearch->
-    }
-
-    /**
-     *
-     */
-    public function delete($contenttype, $id)
-    {
-        //
+        $this->config        = $config;
+        $this->boltConfig    = $boltConfig;
+        $this->tntsearch     = $tntsearch;
+        $this->tntsearchSync = $tntsearchSync;
+        $this->query         = $query;
+        $this->logger        = $logger;
     }
 
     /**

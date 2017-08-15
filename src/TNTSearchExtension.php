@@ -4,10 +4,12 @@ namespace Bolt\Extension\TwoKings\TNTSearch;
 
 use Bolt\Events\StorageEvent;
 use Bolt\Events\StorageEvents;
+use Bolt\Extension\DatabaseSchemaTrait;
 use Bolt\Extension\SimpleExtension;
 use Bolt\Extension\TwoKings\TNTSearch\Config\Config;
 use Bolt\Extension\TwoKings\TNTSearch\Listener\KernelEventListener;
 use Bolt\Extension\TwoKings\TNTSearch\Listener\StorageEventListener;
+use Bolt\Extension\TwoKings\TNTSearch\Table\TNTSearchLookupTable;
 use Bolt\Menu\MenuEntry;
 use Bolt\Version as BoltVersion;
 use Pimple as Container;
@@ -25,6 +27,8 @@ use Symfony\Component\Security\Core\Exception\AccessDeniedException;
  */
 class TNTSearchExtension extends SimpleExtension
 {
+    use DatabaseSchemaTrait;
+
     /** @var string $permission The permission a user needs for interaction with  the back-end */
     private $permission = 'settings';
 
@@ -126,7 +130,19 @@ class TNTSearchExtension extends SimpleExtension
      */
     protected function registerServices(Application $app)
     {
+        $this->extendDatabaseSchemaServices();
+
         $app['tntsearch.config'] = $app->share(function () { return new Config($this->getConfig()); });
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function registerExtensionTables()
+    {
+        return [
+            'tntsearch_lookup' => TNTSearchLookupTable::class,
+        ];
     }
 
     /**

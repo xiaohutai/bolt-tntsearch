@@ -35,7 +35,7 @@ class KernelEventListener implements EventSubscriberInterface
      */
     public function onKernelRequest(GetResponseEvent $event)
     {
-        // $this->service->build();
+        // $this->service
     }
 
     /**

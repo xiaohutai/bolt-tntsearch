@@ -41,13 +41,27 @@ class TNTSearchProvider implements ServiceProviderInterface
             }
         );
 
-        // TwoKings TNTSearch -- eventually both `tntsearch` and `tntsearch.service` should be merged into one
+        // TwoKings TNTSearch Sync Service
+        $app['tntsearch.sync'] = $app->share(
+            function (Application $app) {
+                return new Service\TNTSearchSyncService(
+                    $app['tntsearch.config'],
+                    $app['config'],
+                    $app['tntsearch'],
+                    $app['query'],
+                    $app['logger.system']
+                );
+            }
+        );
+
+        // TwoKings TNTSearch Service
         $app['tntsearch.service'] = $app->share(
             function (Application $app) {
                 return new Service\TNTSearchService(
                     $app['tntsearch.config'],
                     $app['config'],
                     $app['tntsearch'],
+                    $app['tntsearch.sync'],
                     $app['query'],
                     $app['logger.system']
                 );

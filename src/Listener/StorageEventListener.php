@@ -35,7 +35,7 @@ class StorageEventListener implements EventSubscriberInterface
      */
     public function onPostSave(StorageEvent $event)
     {
-        // $this->service->rebuild();
+        // $this->service
     }
 
     /**
@@ -45,7 +45,7 @@ class StorageEventListener implements EventSubscriberInterface
      */
     public function onPostDelete(StorageEvent $event)
     {
-        // $this->service->rebuild();
+        // $this->service
     }
 
     /**
