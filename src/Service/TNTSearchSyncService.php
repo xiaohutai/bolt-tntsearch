@@ -3,7 +3,7 @@
 namespace Bolt\Extension\TwoKings\TNTSearch\Service;
 
 use Bolt\Extension\TwoKings\TNTSearch\Config\Config;
-// use Bolt\Filesystem\Manager;
+use Bolt\Storage\Database\Connection;
 use Bolt\Storage\Query\Query;
 use Monolog\Logger;
 use Silex\Application;
@@ -47,6 +47,12 @@ class TNTSearchSyncService
     /** @var Logger $logger */
     private $logger;
 
+    /** @var string $lookupTableName */
+    private $lookupTableName;
+
+    /** @var Connection $db */
+    private $db;
+
     /** @var array $fuzzyConfig */
     private $fuzzyConfig = [
         'fuzzy_prefix_length'  => 2,
@@ -72,6 +78,7 @@ class TNTSearchSyncService
      * @param \Bolt\Config         $boltConfig
      * @param TNTSearch            $tntsearch
      * @param Query                $query
+     * @param Connection           $db
      * @param Logger               $logger
      */
     public function __construct(
@@ -79,6 +86,7 @@ class TNTSearchSyncService
         \Bolt\Config $boltConfig,
         TNTSearch    $tntsearch,
         Query        $query,
+        Connection   $db,
         Logger       $logger
     )
     {
@@ -86,7 +94,11 @@ class TNTSearchSyncService
         $this->boltConfig = $boltConfig;
         $this->tntsearch  = $tntsearch;
         $this->query      = $query;
+        $this->db         = $db;
         $this->logger     = $logger;
+
+        $this->databasePrefix  = $boltConfig->get('general/database/prefix', 'bolt_');
+        $this->lookupTableName = $this->databasePrefix . 'tntsearch_lookup';
     }
 
     /**
@@ -115,7 +127,7 @@ class TNTSearchSyncService
     private function syncAll()
     {
         $contenttypes = $this->boltConfig->get('contenttypes');
-        foreach ($contentypes as $contenttype => $v) {
+        foreach ($contenttypes as $contenttype => $v) {
             $this->syncContenttype($contenttype);
         }
     }
@@ -127,9 +139,46 @@ class TNTSearchSyncService
      */
     private function syncContenttype($contenttype)
     {
+        $sql = sprintf(
+            "SELECT `id` FROM `%s%s` WHERE `status` = :status AND `id` NOT IN ( SELECT `contentid` FROM `%s` u WHERE `u`.`contenttype` = :contenttype )",
+            $this->databasePrefix,
+            $this->boltConfig->get('contenttypes/' . $contenttype . '/tablename'),
+            $this->lookupTableName
+        );
 
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue('status', 'published');
+        $stmt->bindValue('contenttype', $contenttype);
+        $stmt->execute();
+        // \PDO::FETCH_COLUMN removes the unnecessary array wrapper
+        $missing = $stmt->fetchAll(\PDO::FETCH_COLUMN);
 
+        if (empty($missing)) {
+            return;
+        }
 
+        $pre = "'$contenttype', ";
+        $bulkInsert = sprintf(
+            "INSERT INTO `%s` (`contenttype`, `contentid`) VALUES (%s%s);",
+            $this->lookupTableName,
+            $pre,
+            implode("), (" . $pre, $missing)
+        );
+
+        $this->db->exec($bulkInsert);
+
+        /*
+        // Bulk insert is not available via DBAL
+        foreach ($missing as $id) {
+            $this->db->insert(
+                $this->lookupTableName,
+                [
+                    'contenttype' => $contenttype,
+                    'contentid'   => $missing['id']
+                ]
+            );
+        }
+        //*/
     }
 
     /**
@@ -140,7 +189,17 @@ class TNTSearchSyncService
      */
     private function syncItem($contenttype, $id)
     {
-        //
+        // todo: check if exists and published?
+        // Do we want to check for published items, or don't care?
+
+        $sql = sprintf(
+            "INSERT IGNORE INTO `%s` (`contenttype`, `contentid`) VALUES ('%s', %s)",
+            $this->lookupTableName,
+            $contenttype,
+            $id
+        );
+
+        $this->db->exec($sql);
     }
 
     /**
@@ -165,20 +224,23 @@ class TNTSearchSyncService
     private function indexAll()
     {
         $contenttypes = $this->boltConfig->get('contenttypes');
-        foreach ($contentypes as $contenttype => $v) {
+        foreach ($contenttypes as $contenttype => $v) {
             $this->indexContenttype($contenttype);
         }
 
         // Make an `all.index` for global search
+        /*
         $indexer = $this->tntsearch->createIndex('all.index');
         $sql = sprintf(
-            "SELECT * FROM %s%s WHERE `status` = 'published'",
-            $this->boltConfig->get('general/database/prefix', 'bolt_'),
-            'tntsearch_lookup'
+            "SELECT * FROM %s WHERE `status` = 'published'",
+            $this->lookupTableName
         );
+
         // todo: JOINS
+
         $indexer->query($sql);
         $indexer->run();
+        */
     }
 
     /**
@@ -200,6 +262,8 @@ class TNTSearchSyncService
             $indexer->query($sql);
             $indexer->run();
         }
+
+        // also update all.index for global search
     }
 
     /**

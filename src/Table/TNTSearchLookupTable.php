@@ -26,7 +26,7 @@ class TNTSearchLookupTable extends BaseTable
      */
     protected function addIndexes()
     {
-        $this->table->addIndex(['contenttype', 'contentid']);
+        $this->table->addUniqueIndex(['contenttype', 'contentid']);
     }
 
     /**

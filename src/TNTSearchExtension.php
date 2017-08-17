@@ -100,14 +100,7 @@ class TNTSearchExtension extends SimpleExtension
         if ($request->query->get('rebuild', false)) {
             $contenttypes = $request->request->get('contenttypes', false);
 
-            if (is_array($contenttypes)) {
-                foreach ($contenttypes as $contenttype) {
-                    $app['tntsearch.service']->index($contenttype);
-                }
-            }
-            else {
-                $app['tntsearch.service']->index($contenttypes);
-            }
+            // $app['tntsearch.sync']->sync('pages', 100);
 
             $app['logger.flash']->success('Ok!');
 

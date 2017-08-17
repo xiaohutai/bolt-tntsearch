@@ -65,7 +65,7 @@ class SearchResults
     }
 
     /**
-     * alias of `getLimit()`
+     * Alias for `getLimit()`
      */
     public function getPageSize()
     {
