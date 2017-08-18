@@ -7,10 +7,19 @@
 {% block page_main %}
 
     <div>
+        <form class="form-inline" method="post" action="{{ path('tntsearch.index') }}">
+            <select class="form-control" name="contenttypes[]">
+                <option value="">All</option>
+                {% for contenttype, v in app.config.get('contenttypes') %}
+                <option value="{{ contenttype }}">{{ v.name }}</option>
+                {% endfor %}
+            </select>
+
+            <button class="btn btn-primary">
+                <i class="fa fa-fw fa-search"></i> Index
+            </button>
+        </form>
         <p>
-            <a class="btn btn-primary" href="{{ path('tntsearch.index', {'rebuild': true}) }}">
-                <i class="fa fa-fw fa-search"></i> Rebuild
-            </a>
             {#
             |
             <a class="btn btn-secondary expand-all" href="#">

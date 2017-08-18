@@ -48,15 +48,16 @@ class TNTSearchExtension extends SimpleExtension
     /**
      * {@inheritdoc}
      */
-    protected function registerBackendRoutes(ControllerCollection $collection)
+    protected function registerBackendControllers()
     {
         $prefix = '/extensions/';
         if (version_compare(BoltVersion::forComposer(), '3.3.0', '<')) {
             $prefix = '/extend/';
         }
 
-        $collection->match($prefix . 'tntsearch', [$this, 'tntsearch'])
-            ->bind('tntsearch.index');
+        return [
+            $prefix . 'tntsearch' => new Controller\TNTSearchController(),
+        ];
     }
 
     /**
@@ -81,43 +82,9 @@ class TNTSearchExtension extends SimpleExtension
         return [
             'templates' => [
                 'position' => 'prepend',
-                'namespace' => 'bolt'
+                'namespace' => 'tntsearch'
             ]
         ];
-    }
-
-    /**
-     *
-     */
-    public function tntsearch(Request $request)
-    {
-        $app = $this->getContainer();
-
-        if (!$app['users']->isAllowed($this->permission)) {
-            throw new AccessDeniedException('Logged in user does not have the correct rights to use this route.');
-        }
-
-        if ($request->query->get('rebuild', false)) {
-            $contenttypes = $request->request->get('contenttypes', false);
-
-            // $app['tntsearch.sync']->sync();
-            // $app['tntsearch.sync']->index();
-            $app['tntsearch.service']->search('igitur', null);
-
-            $app['logger.flash']->success('Ok!');
-
-            return $app->redirect(
-                $app['url_generator']->generate('tntsearch.index')
-            );
-        }
-
-        $data = [
-            'title' => "TNTSearch"
-        ];
-
-        $html = $app['twig']->render("@bolt/index.twig", $data);
-
-        return new Response($html);
     }
 
     /**
