@@ -6,41 +6,77 @@
 
 {% block page_main %}
 
-    <div>
-        <form class="form-inline" method="post" action="{{ path('tntsearch.index') }}">
-            <select class="form-control" name="contenttypes[]">
-                <option value="">All</option>
-                {% for contenttype, v in app.config.get('contenttypes') %}
-                <option value="{{ contenttype }}">{{ v.name }}</option>
+    {% set contenttypes = app.config.get('contenttypes') %}
+
+    <div class="clearfix">
+        <div class="pull-left">
+            <form class="form-inline" method="post" action="{{ path('tntsearch.index') }}">
+                <select class="form-control" name="contenttypes[]">
+                    <option value="">All</option>
+                    {% for contenttype, v in contenttypes %}
+                    <option value="{{ contenttype }}">{{ v.name }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary">
+                    <i class="fa fa-fw fa-search"></i> Index
+                </button>
+            </form>
+
+            <br>
+
+            <form class="form-inline" method="get" action="{{ path('tntsearch.search') }}">
+                <input type="text" class="form-control" name="query" value="{{ global.request.get('query', '') }}"/>
+                <select class="form-control" name="contenttype">
+                    <option value="">All</option>
+                    {% for contenttype, v in contenttypes %}
+                    <option value="{{ contenttype }}"{% if global.request.get('contenttype', false) == contenttype %} selected="selected"{% endif %}>{{ v.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa fa-fw fa-search"></i> Search
+                </button>
+            </form>
+
+            <br>
+
+        </div>
+        <div class="pull-right">
+            <p>
+                <a class="btn btn-tertiary pull-right"
+                    href="{{ path('fileedit', { namespace: 'config', file: 'extensions/tntsearch.twokings.yml'}) }}">
+                    <i class="fa fa-fw fa-cog"></i> Edit configuration
+                </a>
+            </p>
+        </div>
+    </div>
+
+    {% if results is defined and results is not empty %}
+        <div>
+            <ol>
+                {% for record in results %}
+                    <li>
+                        <code>[{{ record.contenttype.slug }}/{{ record.id }}]</code>
+                        <i class="fa fa-fw fa-circle status-{{ record.status }}"></i>
+                        <a href="{{ record.link }}">{{ record.title }}</a>
+
+                        {% set editlink = record.editlink() %}
+                        {% if editlink %}
+                            <a class="btn btn-tertiary btn-xs" href="{{ editlink }}">Edit</a>
+                        {% endif %}
+                    </li>
                 {% endfor %}
-            </select>
+            </ol>
+        </div>
+    {% endif %}
 
-            <button class="btn btn-primary">
-                <i class="fa fa-fw fa-search"></i> Index
-            </button>
-        </form>
-        <p>
-            {#
-            |
-            <a class="btn btn-secondary expand-all" href="#">
-                <i class="fa fa-fw fa-caret-down"></i> Expand all
-            </a>
-            <a class="btn btn-secondary collapse-all" href="#">
-                <i class="fa fa-fw fa-caret-up"></i> Collapse all
-            </a>
-            #}
-
-            <a class="btn btn-tertiary pull-right"
-                href="{{ path('fileedit', { namespace: 'config', file: 'extensions/tntsearch.twokings.yml'}) }}">
-                <i class="fa fa-fw fa-cog"></i> Edit configuration
-            </a>
-        </p>
-    </div>
-
-    <div class="well">
-
-    real keks right up in this place
-
-    </div>
+    <!--
+    <ul>
+        <li>todo: show some status</li>
+        <li>todo: show search results</li>
+        <li>todo: test fuzzy</li>
+        <li>todo: test boolean</li>
+        <li>todo: test pagination</li>
+    </ul>
+    -->
 
 {% endblock page_main %}

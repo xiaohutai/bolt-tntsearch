@@ -102,7 +102,9 @@ class TNTSearchService
 
         $ids  = $results['ids'];
         $hits = $results['hits']; // todo: total, use for pagination and slice it ????
-        // $results['execution_time'];
+        $time = $results['execution_time'];
+
+        // dump($ids); // searching in all contenttypes goes wrong ...
 
         if (empty($ids)) {
             return [];

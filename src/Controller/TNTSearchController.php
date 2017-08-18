@@ -102,12 +102,21 @@ class TNTSearchController implements ControllerProviderInterface
     public function search(Application $app, Request $request)
     {
         // $app['tntsearch.service']->search('igitur', null);
-
         // $app['logger.flash']->success('Ok!');
 
-        return $app->redirect(
-            $app['url_generator']->generate('tntsearch.home')
+        $results = $app['tntsearch.service']->search(
+            $request->query->get('query', ''),
+            $request->query->get('contenttype', '')
         );
+
+        // $results = $results[''];
+
+        $html = $app['twig']->render("@tntsearch/home.twig", [
+            'title'   => "TNTSearch",
+            'results' => $results,
+        ]);
+
+        return new Response($html);
     }
 
 }
