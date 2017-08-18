@@ -39,9 +39,11 @@ class IndexCommand extends BaseCommand
         $contenttype = $input->getArgument('contenttype');
 
         if (empty($contenttype)) {
-            $this->app['tntsearch.service']->index();
+            $this->app['tntsearch.sync']->sync();
+            $this->app['tntsearch.sync']->index(); // sync should be implicit per index?
         } else {
-            $this->app['tntsearch.service']->index($contenttype);
+            $this->app['tntsearch.sync']->sync($contenttype);
+            $this->app['tntsearch.sync']->index($contenttype); // sync should be implicit per index?
         }
 
         $time = microtime(true) - $start;

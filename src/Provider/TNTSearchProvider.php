@@ -48,7 +48,6 @@ class TNTSearchProvider implements ServiceProviderInterface
                     $app['tntsearch.config'],
                     $app['config'],
                     $app['tntsearch'],
-                    $app['query'],
                     $app['db'],
                     $app['logger.system']
                 );

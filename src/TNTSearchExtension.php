@@ -100,7 +100,9 @@ class TNTSearchExtension extends SimpleExtension
         if ($request->query->get('rebuild', false)) {
             $contenttypes = $request->request->get('contenttypes', false);
 
-            // $app['tntsearch.sync']->sync('pages', 100);
+            // $app['tntsearch.sync']->sync();
+            // $app['tntsearch.sync']->index();
+            $app['tntsearch.service']->search('igitur', null);
 
             $app['logger.flash']->success('Ok!');
 

@@ -4,7 +4,6 @@ namespace Bolt\Extension\TwoKings\TNTSearch\Service;
 
 use Bolt\Extension\TwoKings\TNTSearch\Config\Config;
 use Bolt\Storage\Database\Connection;
-use Bolt\Storage\Query\Query;
 use Monolog\Logger;
 use Silex\Application;
 use TeamTNT\TNTSearch\TNTSearch;
@@ -41,25 +40,14 @@ class TNTSearchSyncService
     /** @var TNTSearch $tntsearch */
     private $tntsearch;
 
-    /** @var Query $query */
-    private $query;
-
     /** @var Logger $logger */
     private $logger;
-
-    /** @var string $lookupTableName */
-    private $lookupTableName;
 
     /** @var Connection $db */
     private $db;
 
-    /** @var array $fuzzyConfig */
-    private $fuzzyConfig = [
-        'fuzzy_prefix_length'  => 2,
-        'fuzzy_max_expansions' => 50,
-        'fuzzy_distance'       => 2,
-        'fuzziness'            => false,
-    ];
+    /** @var string $lookupTableName */
+    private $lookupTableName;
 
     /** @var array $simpleFields An array with field types that can be indexed directly */
     private $simpleFields = [
@@ -77,7 +65,6 @@ class TNTSearchSyncService
      * @param Config               $config
      * @param \Bolt\Config         $boltConfig
      * @param TNTSearch            $tntsearch
-     * @param Query                $query
      * @param Connection           $db
      * @param Logger               $logger
      */
@@ -85,7 +72,6 @@ class TNTSearchSyncService
         Config       $config,
         \Bolt\Config $boltConfig,
         TNTSearch    $tntsearch,
-        Query        $query,
         Connection   $db,
         Logger       $logger
     )
@@ -93,7 +79,6 @@ class TNTSearchSyncService
         $this->config     = $config;
         $this->boltConfig = $boltConfig;
         $this->tntsearch  = $tntsearch;
-        $this->query      = $query;
         $this->db         = $db;
         $this->logger     = $logger;
 
@@ -209,13 +194,50 @@ class TNTSearchSyncService
     {
         if (empty($contenttype)) {
             $this->indexAll();
+            $this->indexGlobal();
         }
         elseif (empty($id)) {
             $this->indexContenttype($contenttype);
+            $this->indexGlobal();
         }
         else {
             $this->indexItem($contenttype, $id);
         }
+    }
+
+    /**
+     * Indexes `all.index` for global search
+     */
+    private function indexGlobal()
+    {
+        $indexer = $this->tntsearch->createIndex('all.index');
+
+        $sql = sprintf("SELECT * FROM %s", $this->lookupTableName);
+
+        $contenttypes = $this->boltConfig->get('contenttypes');
+        // Far from ideal:
+        // This will introduce a lot of columns with `NULL` values. Doing a
+        // `UNION ALL` could work, but you need to filter out all the columns
+        // and add `NULL AS` projections for every contenttype.
+        // Not entirely sure if it will take a performance hit. But this is
+        // where it would happen.
+        foreach ($contenttypes as $contenttype => $v) {
+            /*
+            // For every contenttype:
+            LEFT JOIN `bolt_pages`
+                ON `bolt_tntsearch_lookup`.`contentid` = `bolt_pages`.`id`
+                AND `bolt_tntsearch_lookup`.`contenttype` = 'pages'
+                AND `bolt_pages`.`status` = 'published'
+            //*/
+            $ctTableName = $this->databasePrefix . $this->boltConfig->get('contenttypes/' . $contenttype . '/tablename');
+            $sql .= sprintf(" LEFT JOIN `%s`", $ctTableName);
+            $sql .= sprintf(" ON `%s`.`contentid` = `%s`.`id`", $this->lookupTableName, $ctTableName);
+            $sql .= sprintf(" AND `%s`.`contenttype` = '%s'", $this->lookupTableName, $contenttype);
+            $sql .= sprintf(" AND `%s`.`status` = 'published'", $ctTableName);
+        }
+
+        $indexer->query($sql);
+        $indexer->run();
     }
 
     /**
@@ -227,20 +249,6 @@ class TNTSearchSyncService
         foreach ($contenttypes as $contenttype => $v) {
             $this->indexContenttype($contenttype);
         }
-
-        // Make an `all.index` for global search
-        /*
-        $indexer = $this->tntsearch->createIndex('all.index');
-        $sql = sprintf(
-            "SELECT * FROM %s WHERE `status` = 'published'",
-            $this->lookupTableName
-        );
-
-        // todo: JOINS
-
-        $indexer->query($sql);
-        $indexer->run();
-        */
     }
 
     /**
@@ -256,14 +264,12 @@ class TNTSearchSyncService
             $sql = sprintf(
                 "SELECT `id`, `%s` FROM `%s%s` WHERE `status` = 'published'",
                 implode('`, `', $fields),
-                $this->boltConfig->get('general/database/prefix', 'bolt_'),
+                $this->databasePrefix,
                 $this->boltConfig->get('contenttypes/' . $contenttype . '/tablename')
             );
             $indexer->query($sql);
             $indexer->run();
         }
-
-        // also update all.index for global search
     }
 
     /**
@@ -324,7 +330,7 @@ class TNTSearchSyncService
         // do something with repeaters
         // do something with taxonomies
         // do something with relatinos
-        // do soemthing with custom fields
+        // do something with custom fields
 
         return $result;
     }

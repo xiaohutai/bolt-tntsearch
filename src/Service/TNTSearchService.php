@@ -92,14 +92,10 @@ class TNTSearchService
             $this->tntsearch->$key = isset($fuzzyOptions[$key]) ? $fuzzyOptions[$key] : $defaultValue;
         }
 
-        // todo: let's see how we can fix this for searching through all contenttypes
-        $contenttype = 'pages';
-
         if (!empty($contenttype)) {
             $this->tntsearch->selectIndex($contenttype . '.index');
         } else {
-            // all contenttypes ?? is that even possible???
-            $this->tntsearch->selectIndex('pages.index');
+            $this->tntsearch->selectIndex('all.index');
         }
 
         $results = $this->tntsearch->search($query, $limit);

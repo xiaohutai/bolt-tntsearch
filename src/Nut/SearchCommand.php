@@ -22,7 +22,7 @@ class SearchCommand extends BaseCommand
         // InputOption   = VALUE_NONE | VALUE_REQUIRED | VALUE_OPTIONAL | VALUE_IS_ARRAY
         $this
             ->setName('tntsearch:search')
-            ->setDescription('Create an index of the database')
+            ->setDescription('Searches the database')
             ->addArgument(
                 'query',
                 InputArgument::REQUIRED,
@@ -65,7 +65,7 @@ class SearchCommand extends BaseCommand
         // exit;
 
         $options = [
-            'fuzziness'      => $fuzzy,
+            'fuzziness' => $fuzzy,
         ];
         if (!empty($prefix)) {
             $options['prefix_length'] = $prefix;
