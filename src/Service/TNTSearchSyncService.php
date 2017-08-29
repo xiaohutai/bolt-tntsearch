@@ -4,8 +4,8 @@ namespace Bolt\Extension\TwoKings\TNTSearch\Service;
 
 use Bolt\Extension\TwoKings\TNTSearch\Config\Config;
 use Bolt\Storage\Database\Connection;
-use Monolog\Logger;
-use Silex\Application;
+use Psr\Log\LoggerInterface;
+use Bolt;
 use TeamTNT\TNTSearch\TNTSearch;
 
 /**
@@ -40,7 +40,7 @@ class TNTSearchSyncService
     /** @var TNTSearch $tntsearch */
     private $tntsearch;
 
-    /** @var Logger $logger */
+    /** @var LoggerInterface $logger */
     private $logger;
 
     /** @var Connection $db */
@@ -60,22 +60,21 @@ class TNTSearchSyncService
     ];
 
     /**
-     * Constructor
+     * Constructor.
      *
-     * @param Config               $config
-     * @param \Bolt\Config         $boltConfig
-     * @param TNTSearch            $tntsearch
-     * @param Connection           $db
-     * @param Logger               $logger
+     * @param Config          $config
+     * @param Bolt\Config     $boltConfig
+     * @param TNTSearch       $tntsearch
+     * @param Connection      $db
+     * @param LoggerInterface $logger
      */
     public function __construct(
         Config       $config,
-        \Bolt\Config $boltConfig,
+        Bolt\Config  $boltConfig,
         TNTSearch    $tntsearch,
         Connection   $db,
-        Logger       $logger
-    )
-    {
+        LoggerInterface       $logger
+    ) {
         $this->config     = $config;
         $this->boltConfig = $boltConfig;
         $this->tntsearch  = $tntsearch;
@@ -120,7 +119,7 @@ class TNTSearchSyncService
     /**
      * Syncs a single contenttype.
      *
-     * @param $contenttype the contenttype to sync
+     * @param string $contenttype The contenttype to sync
      */
     private function syncContenttype($contenttype)
     {
@@ -169,8 +168,8 @@ class TNTSearchSyncService
     /**
      * Syncs a single record.
      *
-     * @param $contenttype the contenttype of the record to sync
-     * @param $id          the id of the record to sync
+     * @param string $contenttype ContentType of the record to sync
+     * @param int    $id          ID of the record to sync
      */
     private function syncItem($contenttype, $id)
     {
@@ -252,9 +251,9 @@ class TNTSearchSyncService
     }
 
     /**
-     * Indexes a single contenttype.
+     * Indexes a single ContentType.
      *
-     * @param $contenttype the contenttype to index
+     * @param string $contenttype ContentType to index
      */
     private function indexContenttype($contenttype)
     {
@@ -298,8 +297,9 @@ class TNTSearchSyncService
      * Returns all searchable fields when the given contenttype is eligible to
      * be synced and indexed, otherwise an empty array.
      *
-     * @param $contenttype the contenttype to check for
-     * @return array       an array with fields for the contenttype
+     * @param string $contenttype ContentType to check for
+     *
+     * @return array       An array with fields for the contenttype
      */
     private function getSearchableFields($contenttype)
     {
