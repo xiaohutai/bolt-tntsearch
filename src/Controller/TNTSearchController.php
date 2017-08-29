@@ -2,121 +2,113 @@
 
 namespace Bolt\Extension\TwoKings\TNTSearch\Controller;
 
-use Bolt\Extension\TwigTrait;
+use Bolt\Controller\Backend\BackendBase;
+use Bolt\Extension\TwoKings\TNTSearch\Service\TNTSearchSyncService;
 use Silex\Application;
 use Silex\ControllerCollection;
-use Silex\ControllerProviderInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
- *
  * @author Xiao-Hu Tai <xiao@twokings.nl>
  */
-class TNTSearchController implements ControllerProviderInterface
+class TNTSearchController extends BackendBase
 {
-    private $permission = 'settings';
+    const PERMISSION = 'settings';
 
     /**
      * {@inheritdoc}
      */
-    public function connect(Application $app)
+    protected function addRoutes(ControllerCollection $c)
     {
-        /** @var $ctr \Silex\ControllerCollection */
-        $ctr = $app['controllers_factory'];
-
-        $ctr
-            ->match("/", [$this, 'home'])
+        $c->match('/', [$this, 'home'])
             ->before([$this, 'before'])
             ->bind('tntsearch.home')
         ;
 
-        $ctr
-            ->match("/index", [$this, 'index'])
+        $c->match('/index', [$this, 'index'])
             ->before([$this, 'before'])
             ->bind('tntsearch.index')
         ;
 
-        $ctr
-            ->match("/search", [$this, 'search'])
+        $c->match('/search', [$this, 'search'])
             // ->before([$this, 'before'])
             ->bind('tntsearch.search')
         ;
 
-        return $ctr;
+        return $c;
     }
 
     /**
-     *
+     * {@inheritdoc}
      */
-    public function before(Request $request, Application $app)
+    public function before(Request $request, Application $app, $roleRoute = null)
     {
-        if (!$app['users']->isAllowed($this->permission)) {
-            throw new AccessDeniedException('Logged in user does not have the correct rights to use this route.');
-        }
+        return parent::before($request, $app, self::PERMISSION);
     }
 
     /**
-     *
+     * @return Response
      */
-    public function home(Application $app, Request $request)
+    public function home()
     {
-        $html = $app['twig']->render("@tntsearch/home.twig", [
-            'title' => "TNTSearch",
+        $html = $this->render('@tntsearch/home.twig', [
+            'title' => 'TNTSearch',
         ]);
 
         return new Response($html);
     }
 
     /**
+     * @param Request $request
      *
+     * @return RedirectResponse
      */
-    public function index(Application $app, Request $request)
+    public function index(Request $request)
     {
-        $contenttypes = $request->request->get('contenttypes', []);
+        /** @var TNTSearchSyncService $tntSearch */
+        $tntSearch = $this->app['tntsearch.sync'];
+        $contentTypes = $request->request->get('contenttypes');
 
-        if (!empty($contenttypes)) {
-            // allow
-            foreach ($contenttypes as $contenttype) {
-                $app['tntsearch.sync']->sync($contenttype);
-                $app['tntsearch.sync']->index($contenttype);
-            }
+        if ($contentTypes === null) {
+            $tntSearch->sync();
+            $tntSearch->index();
 
-            $app['logger.flash']->success('Ok! Indexing '. $contenttype);
-        } else {
-            $app['tntsearch.sync']->sync();
-            $app['tntsearch.sync']->index();
+            $this->flashes()->success('Ok! Indexing ALL');
 
-            $app['logger.flash']->success('Ok! Indexing ALL');
+            return $this->redirect($this->generateUrl('tntsearch.home'));
         }
 
-        return $app->redirect(
-            $app['url_generator']->generate('tntsearch.home')
-        );
+        // allow
+        foreach ($contentTypes as $contentType) {
+            /** @var string $contentType */
+            $tntSearch->sync($contentType);
+            $tntSearch->index($contentType);
+
+            $this->flashes()->success('Ok! Indexing ' . $contentType);
+        }
+
+        return $this->redirect($this->generateUrl('tntsearch.home'));
     }
 
     /**
+     * @param Request $request
      *
+     * @return Response
      */
-    public function search(Application $app, Request $request)
+    public function search(Request $request)
     {
-        // $app['tntsearch.service']->search('igitur', null);
-        // $app['logger.flash']->success('Ok!');
-
-        $results = $app['tntsearch.service']->search(
-            $request->query->get('query', ''),
-            $request->query->get('contenttype', '')
+        $results = $this->app['tntsearch.service']->search(
+            $request->query->getAlpha('query'),
+            $request->query->getAlpha('contenttype')
         );
 
-        // $results = $results[''];
-
-        $html = $app['twig']->render("@tntsearch/home.twig", [
-            'title'   => "TNTSearch",
+        $html = $this->render('@tntsearch/home.twig', [
+            'title'   => 'TNTSearch',
             'results' => $results,
         ]);
 
         return new Response($html);
     }
-
 }
