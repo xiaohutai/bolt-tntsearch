@@ -7,7 +7,7 @@ Makes use of [TNT Studio](https://github.com/teamtnt)'s [TNTSearch](https://gith
 
  * In the root of your Bolt project, do:
 ```
-composer require teamtnt/tntsearch
+composer require teamtnt/tntsearch:^1.0
 ```
  * Make sure `app/config/extensions` is write-able.
  * Install this extension via the Extensions page in Bolt
