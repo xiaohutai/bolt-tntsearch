@@ -2,11 +2,10 @@
 
 namespace Bolt\Extension\TwoKings\TNTSearch\Service;
 
+use Bolt;
 use Bolt\Extension\TwoKings\TNTSearch\Config\Config;
-// use Bolt\Filesystem\Manager;
 use Bolt\Storage\Query\Query;
-use Monolog\Logger;
-use Silex\Application;
+use Psr\Log\LoggerInterface;
 use TeamTNT\TNTSearch\TNTSearch;
 
 /**
@@ -31,7 +30,7 @@ class TNTSearchService
     /** @var Query $query */
     private $query;
 
-    /** @var Logger $logger */
+    /** @var LoggerInterface $logger */
     private $logger;
 
     /** @var array $fuzzyConfig */
@@ -53,24 +52,23 @@ class TNTSearchService
     ];
 
     /**
-     * Constructor
+     * Constructor.
      *
      * @param Config               $config
-     * @param \Bolt\Config         $boltConfig
+     * @param Bolt\Config          $boltConfig
      * @param TNTSearch            $tntsearch
      * @param TNTSearchSyncService $tntsearchSync
      * @param Query                $query
-     * @param Logger               $logger
+     * @param LoggerInterface      $logger
      */
     public function __construct(
         Config               $config,
-        \Bolt\Config         $boltConfig,
+        Bolt\Config          $boltConfig,
         TNTSearch            $tntsearch,
         TNTSearchSyncService $tntsearchSync,
         Query                $query,
-        Logger               $logger
-    )
-    {
+        LoggerInterface      $logger
+    ) {
         $this->config        = $config;
         $this->boltConfig    = $boltConfig;
         $this->tntsearch     = $tntsearch;

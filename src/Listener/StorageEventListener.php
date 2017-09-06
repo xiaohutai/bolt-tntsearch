@@ -3,6 +3,7 @@
 namespace Bolt\Extension\TwoKings\TNTSearch\Listener;
 
 use Bolt\Events\StorageEvent;
+use Bolt\Extension\TwoKings\TNTSearch\Service\TNTSearchService;
 use Silex\Application;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
